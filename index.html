@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relatório Mensal de Chamados - Setor Tecnologia</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#0f1113;
+    --panel:#17191c;
+    --panel-2:#1d2023;
+    --line:#2a2d31;
+    --red:#c0122f;
+    --red-bright:#e8143a;
+    --text:#f2f0ee;
+    --muted:#9a9da2;
+    --muted2:#8b8e93;
+    --ok:#3fb27f;
+    --warn:#e0a83c;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Segoe UI', Arial, sans-serif;
+    padding:40px 48px 64px;
+  }
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    border-bottom:2px solid var(--red);
+    padding-bottom:18px;
+    margin-bottom:32px;
+  }
+  .brand{display:flex; align-items:center; gap:14px;}
+  .brand-mark{
+    width:40px;height:40px;border-radius:10px;
+    background:linear-gradient(135deg, var(--red), #7a0c1f);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:18px;color:#fff;
+    letter-spacing:-1px;
+  }
+  h1{font-size:22px;margin:0;font-weight:700;letter-spacing:.2px;}
+  .subtitle{color:var(--muted2);font-size:13px;margin-top:2px;}
+  .period-tag{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    padding:8px 16px;
+    border-radius:999px;
+    font-size:13px;
+    color:var(--muted2);
+  }
+  .period-tag b{color:var(--text);}
+
+  .tabs{
+    display:flex;
+    gap:8px;
+    margin-bottom:24px;
+  }
+  .tab-btn{
+    background:var(--panel);
+    border:1px solid var(--line);
+    color:var(--muted2);
+    padding:10px 20px;
+    border-radius:10px;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+    font-family:inherit;
+  }
+  .tab-btn.active{
+    background:var(--red);
+    border-color:var(--red);
+    color:#fff;
+  }
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  .table-wrap{
+    overflow-x:auto;
+  }
+  table.cat-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+  }
+  table.cat-table th{
+    text-align:left;
+    color:var(--muted2);
+    font-weight:600;
+    text-transform:uppercase;
+    font-size:11px;
+    letter-spacing:.5px;
+    padding:10px 12px;
+    border-bottom:1px solid var(--line);
+  }
+  table.cat-table td{
+    padding:12px;
+    border-bottom:1px solid var(--line);
+  }
+  table.cat-table tr:last-child td{border-bottom:none;}
+  table.cat-table td.num{text-align:right; font-variant-numeric:tabular-nums;}
+  .cat-bar-bg{
+    background:#24272b;
+    border-radius:4px;
+    height:6px;
+    width:100%;
+    overflow:hidden;
+    margin-top:6px;
+  }
+  .cat-bar-fill{
+    height:100%;
+    background:var(--red);
+    border-radius:4px;
+  }
+
+  .kpi-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:16px;
+    margin-bottom:28px;
+  }
+  .kpi{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:20px 20px 16px;
+    position:relative;
+    overflow:hidden;
+  }
+  .kpi::before{
+    content:'';
+    position:absolute; top:0; left:0; right:0; height:3px;
+  }
+  .kpi.abertos::before{background:var(--red);}
+  .kpi.solucionados::before{background:var(--ok);}
+  .kpi.fechados::before{background:#5a8fd6;}
+  .kpi.atrasados::before{background:var(--warn);}
+  .kpi.taxa::before{background:#a06de0;}
+  .kpi .label{font-size:12px;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px;}
+  .kpi .value{font-size:34px;font-weight:800;margin-top:8px;line-height:1;}
+  .kpi .delta{font-size:12px;margin-top:10px;color:var(--muted2);}
+  .kpi .delta.up{color:var(--ok);}
+  .kpi .delta.flat{color:var(--muted2);}
+
+  .grid-main{
+    display:grid;
+    grid-template-columns: 1.6fr 1fr;
+    gap:18px;
+    margin-bottom:18px;
+  }
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:22px;
+  }
+  .panel h2{
+    font-size:14px;
+    margin:0 0 4px;
+    font-weight:700;
+  }
+  .panel .desc{
+    font-size:12px;
+    color:var(--muted2);
+    margin-bottom:16px;
+  }
+  .chart-wrap{position:relative; height:280px;}
+  .chart-wrap.small{height:220px;}
+
+  .bottom-note{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-left:3px solid var(--red);
+    border-radius:10px;
+    padding:16px 20px;
+    font-size:13px;
+    color:var(--muted2);
+    line-height:1.6;
+  }
+  .bottom-note b{color:var(--text);}
+
+  footer{
+    margin-top:24px;
+    font-size:11px;
+    color:#5c5f63;
+    text-align:right;
+  }
+  @media (max-width: 900px){
+    body{padding:24px 20px 48px;}
+    header{flex-direction:column; align-items:flex-start; gap:14px;}
+    .tabs{flex-wrap:wrap;}
+    .kpi-grid{grid-template-columns:repeat(2,1fr);}
+    .grid-main{grid-template-columns:1fr !important;}
+    h1{font-size:19px;}
+    .kpi .value{font-size:28px;}
+  }
+
+  @media (max-width: 520px){
+    body{padding:18px 14px 40px;}
+    .kpi-grid{grid-template-columns:1fr;}
+    .period-tag{font-size:12px; padding:6px 12px;}
+    .tab-btn{padding:8px 14px; font-size:12px;}
+    .chart-wrap{height:240px !important;}
+    .chart-wrap.small{height:200px !important;}
+    table.cat-table{font-size:12px;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-mark">LS</div>
+    <div>
+      <h1>Relatório Mensal de Chamados - Setor Tecnologia</h1>
+      <div class="subtitle">Sistema de Ticketing (GLPI) — UniLS</div>
+    </div>
+  </div>
+  <div class="period-tag">Período: <b>07/07/2026 a 31/07/2026</b></div>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" data-tab="geral">Visão Geral</button>
+  <button class="tab-btn" data-tab="categorias">Por Categoria</button>
+  <button class="tab-btn" data-tab="setores">Por Setor</button>
+</div>
+
+<div class="tab-panel active" id="tab-geral">
+
+<div class="kpi-grid">
+  <div class="kpi abertos">
+    <div class="label">Chamados Abertos</div>
+    <div class="value" id="kpi-abertos">0</div>
+    <div class="delta" id="kpi-abertos-delta"></div>
+  </div>
+  <div class="kpi solucionados">
+    <div class="label">Solucionados</div>
+    <div class="value" id="kpi-solucionados">0</div>
+    <div class="delta" id="kpi-solucionados-delta"></div>
+  </div>
+  <div class="kpi atrasados">
+    <div class="label">Em Atendimento</div>
+    <div class="value" id="kpi-atendimento">0</div>
+  </div>
+  <div class="kpi taxa">
+    <div class="label">Taxa de Resolução</div>
+    <div class="value" id="kpi-taxa">0%</div>
+    <div class="delta" id="kpi-taxa-delta"></div>
+  </div>
+</div>
+
+<div class="grid-main" style="grid-template-columns:1fr;">
+  <div class="panel">
+    <h2>Volume de Chamados — Evolução Mensal</h2>
+    <div class="desc">Abertos, solucionados e fechados desde a implantação do sistema</div>
+    <div class="chart-wrap">
+      <canvas id="chartLinha"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="bottom-note">
+  <b>Leitura do mês:</b> O sistema de chamados foi implantado oficialmente em julho/2026. Em seu primeiro mês completo, foram registrados <b>123 chamados abertos</b>, com <b>118 solucionados</b> (95,9% de taxa de resolução). Bom ritmo de atendimento logo na largada da nova ferramenta.
+</div>
+
+</div>
+
+<div class="tab-panel" id="tab-categorias">
+
+  <div class="grid-main" style="grid-template-columns:1.4fr 1fr;">
+    <div class="panel">
+      <h2>Chamados Abertos por Categoria</h2>
+      <div class="desc">Distribuição do total de chamados registrados no período, por categoria de atendimento</div>
+      <div class="chart-wrap" style="height:340px;">
+        <canvas id="chartCategoria"></canvas>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Detalhamento</h2>
+      <div class="desc">Abertos, solucionados e fechados por categoria</div>
+      <div class="table-wrap">
+        <table class="cat-table">
+          <thead>
+            <tr>
+              <th>Categoria</th>
+              <th class="num">Chamados</th>
+            </tr>
+          </thead>
+          <tbody id="tabela-categorias"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-note">
+    <b>Leitura por categoria:</b> <b>PC</b> concentra a maior parte dos chamados (25), seguido de <b>Criar acessos</b> (12) e <b>CRM</b> (9) — juntas, essas três categorias somam mais da metade de todo o volume registrado no período.
+    <br><br>
+    <b>Observação:</b> O número de chamados totais não bate com a soma por setor e por categoria. Isso ocorre porque, durante o período, foram realizados ajustes no sistema: parte dos usuários não estava preenchendo os campos de setor e categoria na abertura dos chamados. Diante disso, esses campos foram tornados obrigatórios, o que impacta a comparação direta entre os totais até a estabilização completa do preenchimento.
+  </div>
+
+</div>
+
+<div class="tab-panel" id="tab-setores">
+
+  <div class="grid-main" style="grid-template-columns:1.4fr 1fr;">
+    <div class="panel">
+      <h2>Chamados por Setor</h2>
+      <div class="desc">Origem dos chamados abertos no período, por setor solicitante</div>
+      <div class="chart-wrap" style="height:340px;">
+        <canvas id="chartSetor"></canvas>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Detalhamento</h2>
+      <div class="desc">Volume de chamados por setor</div>
+      <div class="table-wrap">
+        <table class="cat-table">
+          <thead>
+            <tr>
+              <th>Setor</th>
+              <th class="num">Chamados</th>
+              <th class="num">%</th>
+            </tr>
+          </thead>
+          <tbody id="tabela-setores"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-note" id="nota-setores"></div>
+
+</div>
+
+
+<script>
+// Controle das abas
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+// Dados por categoria (fonte: categorias.csv)
+const categorias = [
+  {nome:'PC', total:25},
+  {nome:'Criar acessos', total:12},
+  {nome:'CRM', total:9},
+  {nome:'Markchat', total:7},
+  {nome:'Impressora', total:5},
+  {nome:'Crachá', total:2},
+  {nome:'Mudança de senha', total:1},
+].sort((a,b) => b.total - a.total);
+
+const maxAbertos = Math.max(...categorias.map(c => c.total));
+
+// Preenche tabela de categorias
+const tbody = document.getElementById('tabela-categorias');
+categorias.forEach(c => {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td>
+      ${c.nome}
+      <div class="cat-bar-bg"><div class="cat-bar-fill" style="width:${(c.total/maxAbertos*100).toFixed(0)}%"></div></div>
+    </td>
+    <td class="num">${c.total}</td>
+  `;
+  tbody.appendChild(tr);
+});
+
+// Gráfico de categorias (barras horizontais)
+new Chart(document.getElementById('chartCategoria'), {
+  type: 'bar',
+  data: {
+    labels: categorias.map(c => c.nome),
+    datasets: [{
+      label: 'Chamados',
+      data: categorias.map(c => c.total),
+      backgroundColor: categorias.map((c,i) => i === 0 ? '#e8143a' : 'rgba(232,20,58,0.55)'),
+      borderRadius: 6,
+      barThickness: 22,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: '#24272b' }, beginAtZero: true },
+      y: { grid: { display: false } }
+    }
+  }
+});
+
+// Dados por setor (fonte: setor.csv)
+const setores = [
+  {nome:'Central Matrículas', total:30},
+  {nome:'Coordenação IEP', total:9},
+  {nome:'NAAC', total:9},
+  {nome:'Coordenação UniLS', total:7},
+  {nome:'Financeiro', total:7},
+  {nome:'Gestão de Pessoas', total:7},
+  {nome:'Diretoria Acadêmica UniLS', total:4},
+  {nome:'DP', total:4},
+  {nome:'Marketing', total:2},
+  {nome:'Compras', total:1},
+  {nome:'NEAD', total:1},
+].sort((a,b) => b.total - a.total);
+
+const totalSetores = setores.reduce((acc,s) => acc + s.total, 0);
+const maxSetor = Math.max(...setores.map(s => s.total));
+
+// Preenche tabela de setores
+const tbodySetor = document.getElementById('tabela-setores');
+setores.forEach(s => {
+  const pct = ((s.total/totalSetores)*100).toFixed(1);
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td>
+      ${s.nome}
+      <div class="cat-bar-bg"><div class="cat-bar-fill" style="width:${(s.total/maxSetor*100).toFixed(0)}%; background:#5a8fd6;"></div></div>
+    </td>
+    <td class="num">${s.total}</td>
+    <td class="num">${pct}%</td>
+  `;
+  tbodySetor.appendChild(tr);
+});
+
+document.getElementById('nota-setores').innerHTML =
+  `<b>Leitura por setor:</b> a <b>Central de Matrículas</b> é responsável por ${((setores[0].total/totalSetores)*100).toFixed(0)}% de todos os chamados abertos (${setores[0].total} de ${totalSetores}), disparado o setor de maior demanda. NAAC e Coordenação IEP aparecem na sequência, somando juntos ${setores[1].total + setores[2].total} chamados. Setores administrativos (Compras, DP, NEAD) têm baixa demanda no período.
+  <br><br>
+  <b>Observação:</b> O número de chamados totais não bate com a soma por setor e por categoria. Isso ocorre porque, durante o período, foram realizados ajustes no sistema: parte dos usuários não estava preenchendo os campos de setor e categoria na abertura dos chamados. Diante disso, esses campos foram tornados obrigatórios, o que impacta a comparação direta entre os totais até a estabilização completa do preenchimento.`;
+
+// Gráfico de setores (barras horizontais)
+new Chart(document.getElementById('chartSetor'), {
+  type: 'bar',
+  data: {
+    labels: setores.map(s => s.nome),
+    datasets: [{
+      label: 'Chamados',
+      data: setores.map(s => s.total),
+      backgroundColor: setores.map((s,i) => i === 0 ? '#5a8fd6' : 'rgba(90,143,214,0.55)'),
+      borderRadius: 6,
+      barThickness: 18,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: '#24272b' }, beginAtZero: true },
+      y: { grid: { display: false } }
+    }
+  }
+});
+
+const dados = [
+  {mes:'Maio/2026', abertos:4, solucionados:4},
+  {mes:'Junho/2026', abertos:4, solucionados:4},
+  {mes:'Julho/2026', abertos:123, solucionados:118},
+];
+
+const atual = dados[dados.length-1];
+const anterior = dados[dados.length-2];
+
+document.getElementById('kpi-abertos').textContent = atual.abertos;
+document.getElementById('kpi-solucionados').textContent = atual.solucionados;
+
+const taxa = ((atual.solucionados/atual.abertos)*100).toFixed(1);
+document.getElementById('kpi-taxa').textContent = taxa + '%';
+document.getElementById('kpi-taxa-delta').textContent = atual.solucionados + ' de ' + atual.abertos + ' chamados resolvidos';
+document.getElementById('kpi-taxa-delta').className = 'delta up';
+
+function delta(atualVal, anteriorVal, label){
+  const diff = atualVal - anteriorVal;
+  return diff > 0 ? `+${diff} vs. mês anterior` : `${diff} vs. mês anterior`;
+}
+document.getElementById('kpi-abertos-delta').textContent = delta(atual.abertos, anterior.abertos);
+document.getElementById('kpi-abertos-delta').className = 'delta up';
+document.getElementById('kpi-solucionados-delta').textContent = delta(atual.solucionados, anterior.solucionados);
+document.getElementById('kpi-solucionados-delta').className = 'delta up';
+
+
+Chart.defaults.color = '#9a9da2';
+Chart.defaults.font.family = "'Segoe UI', Arial, sans-serif";
+Chart.defaults.font.size = 11;
+
+// Gráfico de linha - evolução
+new Chart(document.getElementById('chartLinha'), {
+  type: 'line',
+  data: {
+    labels: dados.map(d => d.mes),
+    datasets: [
+      {
+        label: 'Abertos',
+        data: dados.map(d => d.abertos),
+        borderColor: '#e8143a',
+        backgroundColor: 'rgba(232,20,58,0.08)',
+        fill: true,
+        tension: 0.35,
+        pointRadius: 3,
+        pointBackgroundColor: '#e8143a',
+        borderWidth: 2.5,
+      },
+      {
+        label: 'Solucionados',
+        data: dados.map(d => d.solucionados),
+        borderColor: '#3fb27f',
+        backgroundColor: 'rgba(63,178,127,0.06)',
+        fill: false,
+        tension: 0.35,
+        pointRadius: 3,
+        pointBackgroundColor: '#3fb27f',
+        borderWidth: 2,
+      },
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'top', align: 'end', labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true } }
+    },
+    scales: {
+      x: { grid: { color: '#24272b' } },
+      y: { grid: { color: '#24272b' }, beginAtZero: true }
+    }
+  }
+});
+
+// Em atendimento (card na Visão Geral)
+const pendentes = atual.abertos - atual.solucionados;
+document.getElementById('kpi-atendimento').textContent = pendentes;
+</script>
+
+</body>
+</html>
